@@ -1,0 +1,53 @@
+manifold_of_failure/
+├── README.md
+├── USAGE_GUIDE.md
+├── config
+│   ├── experiments.yaml
+│   ├── harm_categories.yaml
+│   └── models.yaml
+├── data
+│   ├── archives
+│   ├── results
+│   └── seed_prompts
+├── experiments
+│   ├── __init__.py
+│   ├── run_gp_prediction.py
+│   └── run_main_experiment.py
+├── quick_start.py
+├── requirements.txt
+├── src
+│   ├── __init__.py
+│   ├── baselines
+│   │   ├── __init__.py
+│   │   └── random_sampling.py
+│   ├── core
+│   │   ├── __init__.py
+│   │   ├── archive.py
+│   │   ├── behavioral_space.py
+│   │   ├── map_elites.py
+│   │   └── quality_metrics.py
+│   ├── models
+│   │   ├── __init__.py
+│   │   └── target_llm.py
+│   ├── mutation
+│   │   ├── __init__.py
+│   │   ├── adversarial_suffix.py
+│   │   ├── base.py
+│   │   ├── crossover.py
+│   │   ├── entity_substitution.py
+│   │   ├── paraphrasing.py
+│   │   └── semantic_interp.py
+│   ├── prediction
+│   │   ├── __init__.py
+│   │   └── gaussian_process.py
+│   └── utils
+│       ├── __init__.py
+│       └── seed_prompts.py
+├── tests
+└── visualization
+    ├── __init__.py
+    ├── coverage_plots.py
+    ├── gp_plots.py
+    └── heatmaps.py
+
+15 directories, 35 files
