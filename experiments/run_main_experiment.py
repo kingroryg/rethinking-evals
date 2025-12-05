@@ -23,6 +23,7 @@ from src.mutation.entity_substitution import EntitySubstitutionMutation
 from src.mutation.crossover import CrossoverMutation
 from src.mutation.semantic_interp import SemanticInterpolationMutation
 from src.mutation.adversarial_suffix import AdversarialSuffixMutation
+from src.mutation.random_axis import RandomAxisMutation
 from src.utils.seed_prompts import generate_seed_prompts, save_seed_prompts_to_file
 from visualization.heatmaps import export_all_visualizations
 from visualization.coverage_plots import create_summary_dashboard
@@ -129,6 +130,10 @@ def setup_components(target_model_name: str, models_config: dict,
     if strategies.get('semantic_interpolation', 0) > 0:
         mutation_ops.append(SemanticInterpolationMutation(embedder, archive, mutation_llm))
         mutation_probs.append(strategies['semantic_interpolation'])
+    
+    if strategies.get('random_axis', 0) > 0:
+        mutation_ops.append(RandomAxisMutation())
+        mutation_probs.append(strategies['random_axis'])
     
     print(f"✓ Mutation operators created: {[op.get_name() for op in mutation_ops]}")
     
