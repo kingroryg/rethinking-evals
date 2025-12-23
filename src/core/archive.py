@@ -88,8 +88,22 @@ class Archive:
         """
         i, j = self._behavior_to_cell(behavior)
         
-        # Check if cell is empty or new prompt is better
-        if self.cells[i, j] is None or quality > self.cells[i, j].quality:
+        # Accept if: empty cell with quality > 0.05, or better than existing
+        if self.cells[i, j] is None:
+            if quality > 0.05:  # Lower threshold for exploration
+                if metadata is None:
+                    metadata = {}
+                metadata['iteration'] = self.current_iteration
+                
+                self.cells[i, j] = ArchiveCell(
+                    prompt=prompt,
+                    behavior=behavior,
+                    quality=quality,
+                    metadata=metadata
+                )
+                self.iteration_added[i, j] = self.current_iteration
+                return True
+        elif quality > self.cells[i, j].quality:
             if metadata is None:
                 metadata = {}
             metadata['iteration'] = self.current_iteration
