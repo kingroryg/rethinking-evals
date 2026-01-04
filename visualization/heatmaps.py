@@ -193,7 +193,7 @@ def create_attraction_basin_visualization(archive,
     
     # Left: continuous heatmap
     im1 = ax1.imshow(heatmap_data.T, origin='lower', cmap='Reds',
-                     vmin=0, vmax=1, aspect='auto', interpolation='bilinear')
+                     vmin=0, vmax=1, aspect='auto', interpolation='nearest')
     ax1.set_xlabel('Query Indirection (a₁)', fontsize=12)
     ax1.set_ylabel('Authority Framing (a₂)', fontsize=12)
     ax1.set_title('Alignment Deviation', fontsize=14, fontweight='bold')
