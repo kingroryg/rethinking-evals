@@ -7,11 +7,11 @@ map_elites:
   # Mutation strategy probabilities (must sum to 1.0)
   mutation_strategies:
     paraphrasing: 0.15
-    entity_substitution: 0.10
-    adversarial_suffix: 0.05
-    crossover: 0.30
-    semantic_interpolation: 0.15
-    random_axis: 0.25
+    entity_substitution: 0.15
+    adversarial_suffix: 0.15
+    crossover: 0.15
+    semantic_interpolation: 0.10
+    random_axis: 0.30
   
   # Logging and checkpointing
   log_interval: 100
