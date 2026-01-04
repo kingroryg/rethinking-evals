@@ -237,14 +237,18 @@ def run_experiment(target_model_name: str,
 
 def main():
     parser = argparse.ArgumentParser(description='Run MAP-Elites experiment for LLM safety')
-    parser.add_argument('--model', type=str, default='gpt4o_mini',
-                       help='Target model name from config (default: gpt4o_mini)')
+    parser.add_argument('--model', type=str, default='llama3_8b',
+                       help='Target model name from config (default: llama3_8b)')
     parser.add_argument('--iterations', type=int, default=None,
                        help='Number of iterations (default: from config)')
     parser.add_argument('--seed-prompts', type=int, default=None,
                        help='Number of seed prompts (default: from config)')
     parser.add_argument('--output-dir', type=str, default=None,
                        help='Output directory (default: auto-generated)')
+    parser.add_argument('--dimensions', type=int, default=2,
+                       help='Number of behavioral dimensions (2, 3, or 4)')
+    parser.add_argument('--grid-size', type=int, default=None,
+                       help='Grid size per dimension (default: 25 for 2D, 15 for 3D+)')
     
     args = parser.parse_args()
     

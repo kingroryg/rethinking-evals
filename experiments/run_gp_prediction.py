@@ -156,12 +156,28 @@ def run_gp_experiment(archive_path: str, output_dir: str = None):
 
 def main():
     parser = argparse.ArgumentParser(description='Run GP prediction experiment')
-    parser.add_argument('--archive', type=str, required=True,
+    parser.add_argument('--archive', type=str, default=None,
                        help='Path to saved archive (.pkl file)')
+    parser.add_argument('--model', type=str, default=None,
+                       help='Model name to find latest archive for')
     parser.add_argument('--output-dir', type=str, default=None,
                        help='Output directory (default: same as archive + /gp_predictions)')
     
     args = parser.parse_args()
+    
+    # Handle model shortcut
+    if args.model and not args.archive:
+        # Find latest archive for model
+        import glob
+        pattern = f"../data/results/{args.model}_*/final_archive.pkl"
+        archives = sorted(glob.glob(pattern))
+        if archives:
+            args.archive = archives[-1]  # Use most recent
+            print(f"Using archive: {args.archive}")
+        else:
+            raise ValueError(f"No archives found for model {args.model}")
+    elif not args.archive:
+        raise ValueError("Either --archive or --model must be specified")
     
     run_gp_experiment(args.archive, args.output_dir)
 

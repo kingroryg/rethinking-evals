@@ -13,8 +13,11 @@ import json
 class BehavioralDescriptor(ABC):
     """Abstract base class for behavioral descriptors."""
     
+    def __init__(self, dimensions: int = 2):
+        self.dimensions = dimensions
+    
     @abstractmethod
-    def compute(self, prompt: str) -> Tuple[float, float]:
+    def compute(self, prompt: str) -> np.ndarray:
         """
         Compute behavioral descriptor for a prompt.
         
@@ -22,7 +25,7 @@ class BehavioralDescriptor(ABC):
             prompt: The prompt text
             
         Returns:
-            (a1, a2) where a1 is indirection and a2 is authority, both in [0, 1]
+            Array of behavioral coordinates with shape (dimensions,), values in [0, 1]
         """
         pass
 
