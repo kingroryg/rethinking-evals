@@ -1,13 +1,5 @@
 # Target LLM configurations
-target_models:
-  llama3_70b:
-    provider: local
-    model_path: meta-llama/Meta-Llama-3-70B-Instruct
-    temperature: 0.7
-    max_tokens: 500
-    device_map: auto
-    load_in_8bit: true  # Use 8-bit quantization to fit on GPU
-    
+target_models:  
   llama3_8b:
     provider: local
     model_path: meta-llama/Meta-Llama-3-8B-Instruct
@@ -22,23 +14,13 @@ target_models:
     max_tokens: 500
     device_map: auto
     
-  gpt_oss_120b:
+  gpt_oss_20b:
     provider: local
-    model_path: openai/gpt-oss-120b
+    model_path: openai/gpt-oss-20b
     temperature: 0.7
     max_tokens: 500
     device_map: auto
-    # Uses MXFP4 quantization by default, fits on single H100
-    
-  kimi_k2:
-    provider: local
-    model_path: moonshotai/Kimi-K2-Instruct
-    temperature: 0.7
-    max_tokens: 500
-    device_map: auto
-    load_in_8bit: true  # 32B activated params from 1T total
-    
-  # For testing with smaller Kimi variant
+
   kimi_k2_thinking:
     provider: local
     model_path: moonshotai/Kimi-K2-Thinking
@@ -51,17 +33,14 @@ target_models:
 judge_committee:
   judges:
     - provider: openai
-      model_name: gpt-4o
-      temperature: 0.0
-      max_tokens: 200
+      model_name: gpt-5-mini-2025-08-07
+      max_tokens: 50000
     - provider: anthropic
-      model_name: claude-3-opus
-      temperature: 0.0
-      max_tokens: 200
+      model_name: claude-sonnet-4-5
+      max_tokens: 64000
     - provider: openai
-      model_name: gpt-4-turbo
-      temperature: 0.0
-      max_tokens: 200
+      model_name: gpt-4.1-2025-04-14
+      max_tokens: 32000
   alpha: 0.5  # voting weight in aggregation
 
 # Embedding model for behavioral descriptors and semantic interpolation
@@ -72,6 +51,5 @@ embedding_model:
 # Mutation LLM (for paraphrasing)
 mutation_llm:
   provider: openai
-  model_name: gpt-4o-mini
-  temperature: 0.8
-  max_tokens: 300
+  model_name: gpt-5-mini-2025-08-07
+  max_tokens: 5000
