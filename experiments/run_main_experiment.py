@@ -29,8 +29,13 @@ from visualization.coverage_plots import create_summary_dashboard
 from sentence_transformers import SentenceTransformer
 
 
-def load_config(config_dir: str = '../config'):
+def load_config(config_dir: str = None):
     """Load all configuration files."""
+    if config_dir is None:
+        import os
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(script_dir)
+        config_dir = os.path.join(project_root, 'config')
     with open(f'{config_dir}/models.yaml', 'r') as f:
         models_config = yaml.safe_load(f)
     
@@ -155,7 +160,9 @@ def run_experiment(target_model_name: str,
     # Create output directory
     if output_dir is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_dir = f"../data/results/{target_model_name}_{timestamp}"
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(script_dir)
+        output_dir = os.path.join(project_root, 'data', 'results', f"{target_model_name}_{timestamp}")
     os.makedirs(output_dir, exist_ok=True)
     
     print(f"\nOutput directory: {output_dir}\n")
