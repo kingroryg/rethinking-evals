@@ -8,30 +8,8 @@ import os
 from openai import OpenAI
 
 
-class TargetLLM(ABC):
-    """Abstract base class for target LLMs."""
-    
-    @abstractmethod
-    def generate(self, prompt: str, **kwargs) -> str:
-        """
-        Generate a response to the prompt.
-        
-        Args:
-            prompt: The input prompt
-            **kwargs: Additional generation parameters
-            
-        Returns:
-            Generated response text
-        """
-        pass
-    
-    @abstractmethod
-    def get_model_name(self) -> str:
-        """Get the model name/identifier."""
-        pass
 
-
-class OpenAILLM(TargetLLM):
+class OpenAILLM():
     """
     OpenAI API-based LLM (GPT models).
     Also works with OpenAI-compatible APIs.
@@ -39,7 +17,6 @@ class OpenAILLM(TargetLLM):
     
     def __init__(self, 
                  model_name: str = "gpt-4o-mini",
-                 temperature: float = 0.7,
                  max_tokens: int = 500,
                  api_key: Optional[str] = None,
                  base_url: Optional[str] = None):
@@ -54,7 +31,6 @@ class OpenAILLM(TargetLLM):
             base_url: Base URL for API (for compatible APIs)
         """
         self.model_name = model_name
-        self.temperature = temperature
         self.max_tokens = max_tokens
         
         # Initialize client
@@ -66,7 +42,6 @@ class OpenAILLM(TargetLLM):
     def generate(self, prompt: str, **kwargs) -> str:
         """Generate response using OpenAI API."""
         # Override defaults with kwargs
-        temperature = kwargs.get('temperature', self.temperature)
         max_tokens = kwargs.get('max_tokens', self.max_tokens)
         
         try:
@@ -75,8 +50,7 @@ class OpenAILLM(TargetLLM):
                 messages=[
                     {"role": "user", "content": prompt}
                 ],
-                temperature=temperature,
-                max_tokens=max_tokens
+                max_completion_tokens=max_tokens
             )
             
             return response.choices[0].message.content
@@ -89,14 +63,13 @@ class OpenAILLM(TargetLLM):
         return self.model_name
 
 
-class AnthropicLLM(TargetLLM):
+class AnthropicLLM():
     """
     Anthropic API-based LLM (Claude models).
     """
     
     def __init__(self,
                  model_name: str = "claude-3-sonnet-20240229",
-                 temperature: float = 0.7,
                  max_tokens: int = 500,
                  api_key: Optional[str] = None):
         """
@@ -109,7 +82,6 @@ class AnthropicLLM(TargetLLM):
             api_key: API key (defaults to ANTHROPIC_API_KEY env var)
         """
         self.model_name = model_name
-        self.temperature = temperature
         self.max_tokens = max_tokens
         
         try:
@@ -122,20 +94,26 @@ class AnthropicLLM(TargetLLM):
     
     def generate(self, prompt: str, **kwargs) -> str:
         """Generate response using Anthropic API."""
-        temperature = kwargs.get('temperature', self.temperature)
         max_tokens = kwargs.get('max_tokens', self.max_tokens)
         
         try:
-            response = self.client.messages.create(
+            # Use streaming for potentially long requests
+            stream = self.client.messages.create(
                 model=self.model_name,
                 max_tokens=max_tokens,
-                temperature=temperature,
                 messages=[
                     {"role": "user", "content": prompt}
-                ]
+                ],
+                stream=True
             )
             
-            return response.content[0].text
+            # Collect the streamed response
+            response_text = ""
+            for event in stream:
+                if hasattr(event, 'delta') and hasattr(event.delta, 'text'):
+                    response_text += event.delta.text
+            
+            return response_text
             
         except Exception as e:
             print(f"Error generating response: {e}")
@@ -145,17 +123,12 @@ class AnthropicLLM(TargetLLM):
         return self.model_name
 
 
-class LocalLLM(TargetLLM):
+class LocalLLM():
     """
     Local LLM using Hugging Face transformers.
     """
     
-    def __init__(self,
-                 model_path: str,
-                 temperature: float = 0.7,
-                 max_tokens: int = 500,
-                 load_in_8bit: bool = False,
-                 device: str = "auto"):
+    def __init__(self,model_path: str,temperature: float = 0.7,max_tokens: int = 500,load_in_8bit: bool = False,device: str = "auto"):
         """
         Initialize local LLM.
         
@@ -233,7 +206,7 @@ class LocalLLM(TargetLLM):
         return self.model_path
 
 
-class MockLLM(TargetLLM):
+class MockLLM():
     """
     Mock LLM for testing.
     Returns predefined responses or random text.
@@ -259,7 +232,7 @@ class MockLLM(TargetLLM):
         return self.model_name
 
 
-def create_target_llm(config: Dict) -> TargetLLM:
+def create_target_llm(config: Dict):
     """
     Factory function to create target LLMs from config.
     
@@ -269,12 +242,13 @@ def create_target_llm(config: Dict) -> TargetLLM:
     Returns:
         TargetLLM instance
     """
-    provider = config.get('provider', 'openai')
+    provider = config.get('provider')
+
+    print(config)
     
     if provider == 'openai':
         return OpenAILLM(
-            model_name=config.get('model_name', 'gpt-4o-mini'),
-            temperature=config.get('temperature', 0.7),
+            model_name=config.get('model_name'),
             max_tokens=config.get('max_tokens', 500),
             api_key=config.get('api_key'),
             base_url=config.get('base_url')
@@ -282,20 +256,13 @@ def create_target_llm(config: Dict) -> TargetLLM:
     
     elif provider == 'anthropic':
         return AnthropicLLM(
-            model_name=config.get('model_name', 'claude-3-sonnet-20240229'),
-            temperature=config.get('temperature', 0.7),
+            model_name=config.get('model_name'),
             max_tokens=config.get('max_tokens', 500),
             api_key=config.get('api_key')
         )
     
     elif provider == 'local':
-        return LocalLLM(
-            model_path=config.get('model_path'),
-            temperature=config.get('temperature', 0.7),
-            max_tokens=config.get('max_tokens', 500),
-            load_in_8bit=config.get('load_in_8bit', False),
-            device=config.get('device', 'auto')
-        )
+        return LocalLLM(model_path=config.get('model_path'),temperature=config.get('temperature', 0.7),max_tokens=config.get('max_tokens', 500),load_in_8bit=config.get('load_in_8bit', False),device=config.get('device_map', 'auto'))
     
     elif provider == 'mock':
         return MockLLM(
