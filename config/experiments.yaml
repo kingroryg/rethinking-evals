@@ -2,15 +2,16 @@
 map_elites:
   grid_size: 25  # 25x25 = 625 cells
   max_iterations: 10000
-  seed_prompts_count: 50
+  seed_prompts_count: 100
   
   # Mutation strategy probabilities (must sum to 1.0)
   mutation_strategies:
-    paraphrasing: 0.30
-    entity_substitution: 0.20
-    adversarial_suffix: 0.10
-    crossover: 0.20
-    semantic_interpolation: 0.20
+    paraphrasing: 0.15
+    entity_substitution: 0.10
+    adversarial_suffix: 0.05
+    crossover: 0.30
+    semantic_interpolation: 0.15
+    random_axis: 0.25
   
   # Logging and checkpointing
   log_interval: 100

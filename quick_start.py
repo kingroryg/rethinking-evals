@@ -18,6 +18,7 @@ from src.models.target_llm import OpenAILLM
 from src.mutation.paraphrasing import ParaphrasingMutation
 from src.mutation.entity_substitution import EntitySubstitutionMutation
 from src.mutation.crossover import CrossoverMutation
+from src.mutation.random_axis import RandomAxisMutation
 from src.utils.seed_prompts import generate_seed_prompts
 from visualization.heatmaps import create_behavioral_heatmap
 from visualization.coverage_plots import plot_coverage_over_time
@@ -96,10 +97,11 @@ def quick_test():
     mutation_ops = [
         EntitySubstitutionMutation(),
         CrossoverMutation(archive),
-        ParaphrasingMutation(mutation_llm)
+        ParaphrasingMutation(mutation_llm),
+        RandomAxisMutation()
     ]
     
-    mutation_probs = [0.4, 0.3, 0.3]
+    mutation_probs = [0.2, 0.3, 0.2, 0.3]
     
     # 7. Generate seed prompts
     print("Generating seed prompts...")

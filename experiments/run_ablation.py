@@ -30,6 +30,7 @@ from src.mutation.entity_substitution import EntitySubstitutionMutation
 from src.mutation.crossover import CrossoverMutation
 from src.mutation.semantic_interp import SemanticInterpolationMutation
 from src.mutation.adversarial_suffix import AdversarialSuffixMutation
+from src.mutation.random_axis import RandomAxisMutation
 
 
 class SimpleToxicityMetric:
@@ -148,7 +149,8 @@ def run_full_method(target_model_name: str, budget: int, output_dir: Path,
         EntitySubstitutionMutation(),
         CrossoverMutation(),
         SemanticInterpolationMutation(embedding_model_name=models_config['embedding_model']['model_name']),
-        AdversarialSuffixMutation()
+        AdversarialSuffixMutation(),
+        RandomAxisMutation()
     ]
     
     mutation_probs = list(exp_config['map_elites']['mutation_strategies'].values())
@@ -218,7 +220,8 @@ def run_without_alignment_deviation(target_model_name: str, budget: int, output_
         EntitySubstitutionMutation(),
         CrossoverMutation(),
         SemanticInterpolationMutation(embedding_model_name=models_config['embedding_model']['model_name']),
-        AdversarialSuffixMutation()
+        AdversarialSuffixMutation(),
+        RandomAxisMutation()
     ]
     
     mutation_probs = list(exp_config['map_elites']['mutation_strategies'].values())
@@ -280,7 +283,8 @@ def run_without_map_elites(target_model_name: str, budget: int, output_dir: Path
         EntitySubstitutionMutation(),
         CrossoverMutation(),
         SemanticInterpolationMutation(embedding_model_name=models_config['embedding_model']['model_name']),
-        AdversarialSuffixMutation()
+        AdversarialSuffixMutation(),
+        RandomAxisMutation()
     ]
     
     mutation_probs = list(exp_config['map_elites']['mutation_strategies'].values())
