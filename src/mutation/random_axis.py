@@ -118,7 +118,9 @@ class RandomAxisMutation(MutationOperator):
             'target_corner',
             'target_edge', 
             'target_random',
-            'sweep_axis'
+            'sweep_axis',
+            'target_low',   # explicitly target low values
+            'target_high',  # explicitly target high values
         ])
         
         if strategy == 'target_corner':
@@ -127,8 +129,24 @@ class RandomAxisMutation(MutationOperator):
             return self._target_edge()
         elif strategy == 'sweep_axis':
             return self._sweep_axis()
+        elif strategy == 'target_low':
+            return self._target_low()
+        elif strategy == 'target_high':
+            return self._target_high()
         else:
             return self._target_random()
+    
+    def _target_low(self) -> str:
+        """Target low values (0.0-0.25) on both axes."""
+        obf = random.choice([0.0, 0.25])
+        pres = random.choice([0.0, 0.25])
+        return self._generate_at_coords(obf, pres)
+    
+    def _target_high(self) -> str:
+        """Target high values (0.75-1.0) on both axes."""
+        obf = random.choice([0.75, 1.0])
+        pres = random.choice([0.75, 1.0])
+        return self._generate_at_coords(obf, pres)
     
     def _target_corner(self) -> str:
         """Target one of the 4 corners of behavioral space."""

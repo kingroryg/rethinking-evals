@@ -20,6 +20,7 @@ target_models:
     temperature: 0.7
     max_tokens: 500
     device_map: auto
+    torch_dtype: bfloat16
 
   kimi_k2_thinking:
     provider: local
@@ -28,6 +29,11 @@ target_models:
     max_tokens: 500
     device_map: auto
     load_in_8bit: true
+
+  gpt5_mini:
+    provider: openai
+    model_name: gpt-5-mini-2025-08-07
+    max_tokens: 500
 
 # Judge committee configurations
 judge_committee:

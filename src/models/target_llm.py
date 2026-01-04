@@ -128,7 +128,7 @@ class LocalLLM():
     Local LLM using Hugging Face transformers.
     """
     
-    def __init__(self,model_path: str,temperature: float = 0.7,max_tokens: int = 500,load_in_8bit: bool = False,device: str = "auto"):
+    def __init__(self,model_path: str,temperature: float = 0.7,max_tokens: int = 500,load_in_8bit: bool = False,device: str = "auto", torch_dtype: str = "float16"):
         """
         Initialize local LLM.
         
@@ -138,6 +138,7 @@ class LocalLLM():
             max_tokens: Maximum tokens to generate
             load_in_8bit: Whether to load in 8-bit mode
             device: Device to use ('cuda', 'cpu', 'auto')
+            torch_dtype: Data type ('float16', 'bfloat16', 'float32')
         """
         self.model_path = model_path
         self.temperature = temperature
@@ -146,6 +147,13 @@ class LocalLLM():
         try:
             from transformers import AutoTokenizer, AutoModelForCausalLM
             import torch
+            
+            dtype_map = {
+                'float16': torch.float16,
+                'bfloat16': torch.bfloat16,
+                'float32': torch.float32,
+            }
+            dtype = dtype_map.get(torch_dtype, torch.float16)
             
             self.tokenizer = AutoTokenizer.from_pretrained(model_path)
             
@@ -159,7 +167,7 @@ class LocalLLM():
                 self.model = AutoModelForCausalLM.from_pretrained(
                     model_path,
                     device_map=device,
-                    torch_dtype=torch.float16
+                    torch_dtype=dtype
                 )
             
             self.model.eval()
@@ -262,7 +270,7 @@ def create_target_llm(config: Dict):
         )
     
     elif provider == 'local':
-        return LocalLLM(model_path=config.get('model_path'),temperature=config.get('temperature', 0.7),max_tokens=config.get('max_tokens', 500),load_in_8bit=config.get('load_in_8bit', False),device=config.get('device_map', 'auto'))
+        return LocalLLM(model_path=config.get('model_path'),temperature=config.get('temperature', 0.7),max_tokens=config.get('max_tokens', 500),load_in_8bit=config.get('load_in_8bit', False),device=config.get('device_map', 'auto'),torch_dtype=config.get('torch_dtype', 'float16'))
     
     elif provider == 'mock':
         return MockLLM(
