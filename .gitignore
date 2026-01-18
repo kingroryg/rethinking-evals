@@ -210,15 +210,12 @@ runs/
 # Model weights and checkpoints
 *.pt
 *.pth
-*.pkl
 *.h5
 *.hdf5
 *.safetensors
-checkpoints/
 
 # Large data files
 *.csv
-*.json
 *.jsonl
 *.parquet
 *.feather
