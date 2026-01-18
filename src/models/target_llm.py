@@ -8,8 +8,21 @@ import os
 from openai import OpenAI
 
 
+class TargetLLM(ABC):
+    """Abstract base class for target LLMs."""
 
-class OpenAILLM():
+    @abstractmethod
+    def generate(self, prompt: str, **kwargs) -> str:
+        """Generate a response for the given prompt."""
+        pass
+
+    @abstractmethod
+    def get_model_name(self) -> str:
+        """Return the model name."""
+        pass
+
+
+class OpenAILLM(TargetLLM):
     """
     OpenAI API-based LLM (GPT models).
     Also works with OpenAI-compatible APIs.
@@ -63,7 +76,7 @@ class OpenAILLM():
         return self.model_name
 
 
-class AnthropicLLM():
+class AnthropicLLM(TargetLLM):
     """
     Anthropic API-based LLM (Claude models).
     """
@@ -123,7 +136,7 @@ class AnthropicLLM():
         return self.model_name
 
 
-class LocalLLM():
+class LocalLLM(TargetLLM):
     """
     Local LLM using Hugging Face transformers.
     """
@@ -214,7 +227,7 @@ class LocalLLM():
         return self.model_path
 
 
-class MockLLM():
+class MockLLM(TargetLLM):
     """
     Mock LLM for testing.
     Returns predefined responses or random text.

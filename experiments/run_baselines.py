@@ -24,10 +24,15 @@ from src.utils.seed_prompts import generate_seed_prompts
 from src.mutation.paraphrasing import ParaphrasingMutation
 from src.mutation.entity_substitution import EntitySubstitutionMutation
 from src.mutation.crossover import CrossoverMutation
+from src.core.archive import Archive
+from sentence_transformers import SentenceTransformer
 
 
-def load_config(config_dir: str = '../config'):
+def load_config(config_dir: str = None):
     """Load all configuration files."""
+    if config_dir is None:
+        # Use path relative to this script's location
+        config_dir = os.path.join(os.path.dirname(__file__), '..', 'config')
     with open(f'{config_dir}/models.yaml', 'r') as f:
         models_config = yaml.safe_load(f)
     
@@ -40,58 +45,74 @@ def load_config(config_dir: str = '../config'):
     return models_config, exp_config, harm_config
 
 
-def setup_components(target_model_name: str, models_config: dict, harm_config: dict):
+def setup_components(target_model_name: str, models_config: dict, exp_config: dict, harm_config: dict, seed_prompt_count: int = 50):
     """Set up common components for baselines."""
+    print("="*60)
+    print("SETTING UP BASELINE COMPONENTS")
+    print("="*60)
+
     # Target LLM
     target_config = models_config['target_models'][target_model_name]
     target_llm = create_target_llm(target_config)
-    
+    print(f"✓ Target LLM: {target_llm.get_model_name()}")
+
     # Judge Committee
     judges = []
     for judge_config in models_config['judge_committee']['judges']:
-        judge = JudgeLLM(
-            provider=judge_config['provider'],
-            model_name=judge_config['model_name'],
-            temperature=judge_config['temperature'],
-            max_tokens=judge_config['max_tokens']
-        )
+        judge_llm_client = create_target_llm(judge_config)
+        judge = JudgeLLM(judge_llm_client, harm_config['categories'])
         judges.append(judge)
-    
-    judge_committee = JudgeCommittee(
-        judges=judges,
-        alpha=models_config['judge_committee']['alpha']
-    )
-    
+
+    alpha = models_config['judge_committee']['alpha']
+    judge_committee = JudgeCommittee(judges=judges, alpha=alpha)
+    print(f"✓ Judge committee created ({len(judges)} judges, α={alpha})")
+
     # Quality metric
     quality_metric = AlignmentDeviation(
+        target_llm=target_llm,
         judge_committee=judge_committee,
-        harm_categories=harm_config['categories']
+        cache_enabled=True
     )
-    
-    # Behavioral descriptor
-    behavioral_descriptor = create_descriptor(target_llm)
-    
-    # Seed prompts
-    seed_prompts = generate_seed_prompts(
-        harm_categories=harm_config['categories'],
-        count=50
-    )
-    
+    print(f"✓ Alignment Deviation metric created")
+
+    # Behavioral descriptor (match main experiment)
+    descriptor_config = exp_config['map_elites']['behavioral_descriptor']
+    method = descriptor_config['method']
+
+    if method == 'llm_based':
+        descriptor_llm = create_target_llm(models_config['mutation_llm'])
+        behavioral_descriptor = create_descriptor('llm_based', llm_client=descriptor_llm)
+    elif method == 'embedding_based':
+        embedder = SentenceTransformer(models_config['embedding_model']['model_name'])
+        behavioral_descriptor = create_descriptor('embedding_based', embedder=embedder)
+    else:
+        raise ValueError(f"Unknown descriptor method: {method}")
+    print(f"✓ Behavioral descriptor created (method: {method})")
+
+    # Seed prompts (match main experiment signature)
+    seed_prompts = generate_seed_prompts(num_prompts=seed_prompt_count, diverse=True)
+    print(f"✓ Generated {len(seed_prompts)} seed prompts")
+
     return target_llm, quality_metric, behavioral_descriptor, seed_prompts
 
 
-def run_random_baseline(target_llm, quality_metric, behavioral_descriptor, 
-                       seed_prompts, budget: int, output_dir: Path):
+def run_random_baseline(target_llm, quality_metric, behavioral_descriptor,
+                       seed_prompts, budget: int, exp_config: dict, output_dir: Path):
     """Run random sampling baseline."""
     print("Running Random Sampling baseline...")
-    
+
+    # Create archive for storing results
+    grid_size = exp_config['map_elites']['grid_size']
+    archive = Archive(grid_size=grid_size)
+
     baseline = RandomSampling(
         target_llm=target_llm,
         quality_metric=quality_metric,
-        behavioral_descriptor=behavioral_descriptor
+        behavioral_descriptor=behavioral_descriptor,
+        archive=archive
     )
-    
-    results = baseline.run(seed_prompts, budget)
+
+    results = baseline.run(budget, seed_prompts)
     
     # Save results
     output_file = output_dir / 'random_results.json'
@@ -176,15 +197,20 @@ def run_pair_baseline(target_llm, quality_metric, behavioral_descriptor,
 
 
 def run_tap_baseline(target_llm, quality_metric, behavioral_descriptor,
-                    seed_prompts, budget: int, models_config: dict, output_dir: Path):
+                    seed_prompts, budget: int, models_config: dict, exp_config: dict, output_dir: Path):
     """Run TAP baseline."""
     print("Running TAP baseline...")
-    
-    # Set up mutation operators for TAP
+
+    # Create archive for CrossoverMutation
+    grid_size = exp_config['map_elites']['grid_size']
+    archive = Archive(grid_size=grid_size)
+
+    # Set up mutation operators for TAP (match main experiment)
+    mutation_llm = create_target_llm(models_config['mutation_llm'])
     mutation_ops = [
-        ParaphrasingMutation(llm_config=models_config['mutation_llm']),
+        ParaphrasingMutation(mutation_llm),
         EntitySubstitutionMutation(),
-        CrossoverMutation()
+        CrossoverMutation(archive)
     ]
     
     baseline = TAPBaseline(
@@ -224,6 +250,8 @@ def main():
                        help='Baselines to run')
     parser.add_argument('--runs', type=int, default=3,
                        help='Number of runs per baseline')
+    parser.add_argument('--seed-prompts', type=int, default=50,
+                       help='Number of seed prompts to generate')
     parser.add_argument('--output-dir', type=str, default=None,
                        help='Output directory')
     
@@ -237,12 +265,13 @@ def main():
         output_dir = Path(args.output_dir)
     else:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_dir = Path(f'../data/results/baselines_{args.model}_{timestamp}')
+        script_dir = os.path.dirname(__file__)
+        output_dir = Path(os.path.join(script_dir, '..', 'data', 'results', f'baselines_{args.model}_{timestamp}'))
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Set up components
     target_llm, quality_metric, behavioral_descriptor, seed_prompts = setup_components(
-        args.model, models_config, harm_config
+        args.model, models_config, exp_config, harm_config, args.seed_prompts
     )
     
     # Run baselines
@@ -256,7 +285,7 @@ def main():
         if 'random' in args.baselines:
             results = run_random_baseline(
                 target_llm, quality_metric, behavioral_descriptor,
-                seed_prompts, args.budget, run_dir
+                seed_prompts, args.budget, exp_config, run_dir
             )
             all_results.setdefault('random', []).append(results)
         
@@ -277,7 +306,7 @@ def main():
         if 'tap' in args.baselines:
             results = run_tap_baseline(
                 target_llm, quality_metric, behavioral_descriptor,
-                seed_prompts, args.budget, models_config, run_dir
+                seed_prompts, args.budget, models_config, exp_config, run_dir
             )
             all_results.setdefault('tap', []).append(results)
     
