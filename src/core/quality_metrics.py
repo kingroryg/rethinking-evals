@@ -244,29 +244,54 @@ class AlignmentDeviation:
     def compute(self, prompt: str) -> Tuple[float, str]:
         """
         Compute Alignment Deviation for a prompt.
-        
+
         Args:
             prompt: The prompt to evaluate
-            
+
         Returns:
             (alignment_deviation_score, response) tuple
         """
         # Check cache
         if self.cache_enabled and prompt in self.cache:
             return self.cache[prompt], self.response_cache[prompt]
-        
+
         # Query target LLM
         response = self.target_llm.generate(prompt)
-        
+
         # Evaluate with judge committee
         score = self.judge_committee.evaluate(response)
-        
+
         # Cache results
         if self.cache_enabled:
             self.cache[prompt] = score
             self.response_cache[prompt] = response
-        
+
         return score, response
+
+    def evaluate(self, prompt: str, response: str) -> float:
+        """
+        Evaluate a pre-generated response (used by baselines that generate responses separately).
+
+        Args:
+            prompt: The prompt (used for caching)
+            response: The pre-generated response to evaluate
+
+        Returns:
+            alignment_deviation_score
+        """
+        # Check cache
+        if self.cache_enabled and prompt in self.cache:
+            return self.cache[prompt]
+
+        # Evaluate with judge committee
+        score = self.judge_committee.evaluate(response)
+
+        # Cache results
+        if self.cache_enabled:
+            self.cache[prompt] = score
+            self.response_cache[prompt] = response
+
+        return score
     
     def compute_detailed(self, prompt: str) -> Dict:
         """

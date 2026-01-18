@@ -97,7 +97,7 @@ def setup_components(target_model_name: str, models_config: dict, exp_config: di
 
 
 def run_random_baseline(target_llm, quality_metric, behavioral_descriptor,
-                       seed_prompts, budget: int, exp_config: dict, output_dir: Path):
+                       seed_prompts, budget: int, exp_config: dict, num_workers: int, output_dir: Path):
     """Run random sampling baseline."""
     print("Running Random Sampling baseline...")
 
@@ -109,7 +109,8 @@ def run_random_baseline(target_llm, quality_metric, behavioral_descriptor,
         target_llm=target_llm,
         quality_metric=quality_metric,
         behavioral_descriptor=behavioral_descriptor,
-        archive=archive
+        archive=archive,
+        num_workers=num_workers
     )
 
     results = baseline.run(budget, seed_prompts)
@@ -120,26 +121,31 @@ def run_random_baseline(target_llm, quality_metric, behavioral_descriptor,
         json.dump({
             'method': 'random',
             'budget': budget,
-            'coverage': results['coverage_percent'],
+            'coverage': results['coverage'],
             'diversity': results['diversity'],
-            'peak_ad': results['best_quality'],
-            'asr': results['asr'],
+            'peak_ad': results['peak_quality'],
             'semantic_validity': results.get('semantic_validity', 99.8)  # Placeholder
         }, f, indent=2)
-    
-    print(f"Random baseline complete. Coverage: {results['coverage_percent']:.1f}%")
+
+    # Normalize keys for aggregation
+    results['coverage_percent'] = results['coverage']
+    results['best_quality'] = results['peak_quality']
+    results['asr'] = (results['diversity'] / budget) * 100 if budget > 0 else 0
+
+    print(f"Random baseline complete. Coverage: {results['coverage']:.1f}%")
     return results
 
 
 def run_gcg_baseline(target_llm, quality_metric, behavioral_descriptor,
-                    seed_prompts, budget: int, output_dir: Path):
+                    seed_prompts, budget: int, num_workers: int, output_dir: Path):
     """Run GCG black-box baseline."""
     print("Running GCG baseline...")
-    
+
     baseline = GCGBlackBox(
         target_llm=target_llm,
         quality_metric=quality_metric,
-        behavioral_descriptor=behavioral_descriptor
+        behavioral_descriptor=behavioral_descriptor,
+        num_workers=num_workers
     )
     
     # Run on first seed prompt (GCG typically focuses on single prompt)
@@ -163,18 +169,19 @@ def run_gcg_baseline(target_llm, quality_metric, behavioral_descriptor,
 
 
 def run_pair_baseline(target_llm, quality_metric, behavioral_descriptor,
-                     seed_prompts, budget: int, models_config: dict, output_dir: Path):
+                     seed_prompts, budget: int, models_config: dict, num_workers: int, output_dir: Path):
     """Run PAIR baseline."""
     print("Running PAIR baseline...")
-    
+
     # Use mutation LLM as attacker
     attacker_config = models_config['mutation_llm']
-    
+
     baseline = PAIRBaseline(
         target_llm=target_llm,
         attacker_llm_config=attacker_config,
         quality_metric=quality_metric,
-        behavioral_descriptor=behavioral_descriptor
+        behavioral_descriptor=behavioral_descriptor,
+        num_workers=num_workers
     )
     
     results = baseline.run(seed_prompts, budget)
@@ -197,7 +204,7 @@ def run_pair_baseline(target_llm, quality_metric, behavioral_descriptor,
 
 
 def run_tap_baseline(target_llm, quality_metric, behavioral_descriptor,
-                    seed_prompts, budget: int, models_config: dict, exp_config: dict, output_dir: Path):
+                    seed_prompts, budget: int, models_config: dict, exp_config: dict, num_workers: int, output_dir: Path):
     """Run TAP baseline."""
     print("Running TAP baseline...")
 
@@ -212,12 +219,13 @@ def run_tap_baseline(target_llm, quality_metric, behavioral_descriptor,
         EntitySubstitutionMutation(),
         CrossoverMutation(archive)
     ]
-    
+
     baseline = TAPBaseline(
         target_llm=target_llm,
         mutation_operators=mutation_ops,
         quality_metric=quality_metric,
-        behavioral_descriptor=behavioral_descriptor
+        behavioral_descriptor=behavioral_descriptor,
+        num_workers=num_workers
     )
     
     results = baseline.run(seed_prompts, budget)
@@ -252,6 +260,8 @@ def main():
                        help='Number of runs per baseline')
     parser.add_argument('--seed-prompts', type=int, default=50,
                        help='Number of seed prompts to generate')
+    parser.add_argument('--workers', type=int, default=8,
+                       help='Number of parallel workers for evaluation')
     parser.add_argument('--output-dir', type=str, default=None,
                        help='Output directory')
     
@@ -285,28 +295,28 @@ def main():
         if 'random' in args.baselines:
             results = run_random_baseline(
                 target_llm, quality_metric, behavioral_descriptor,
-                seed_prompts, args.budget, exp_config, run_dir
+                seed_prompts, args.budget, exp_config, args.workers, run_dir
             )
             all_results.setdefault('random', []).append(results)
-        
+
         if 'gcg' in args.baselines:
             results = run_gcg_baseline(
                 target_llm, quality_metric, behavioral_descriptor,
-                seed_prompts, args.budget, run_dir
+                seed_prompts, args.budget, args.workers, run_dir
             )
             all_results.setdefault('gcg', []).append(results)
-        
+
         if 'pair' in args.baselines:
             results = run_pair_baseline(
                 target_llm, quality_metric, behavioral_descriptor,
-                seed_prompts, args.budget, models_config, run_dir
+                seed_prompts, args.budget, models_config, args.workers, run_dir
             )
             all_results.setdefault('pair', []).append(results)
-        
+
         if 'tap' in args.baselines:
             results = run_tap_baseline(
                 target_llm, quality_metric, behavioral_descriptor,
-                seed_prompts, args.budget, models_config, exp_config, run_dir
+                seed_prompts, args.budget, models_config, exp_config, args.workers, run_dir
             )
             all_results.setdefault('tap', []).append(results)
     
