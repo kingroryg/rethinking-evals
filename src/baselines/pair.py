@@ -21,7 +21,7 @@ class PAIRBaseline:
                  attacker_llm_config: Dict,
                  quality_metric: AlignmentDeviation,
                  behavioral_descriptor,
-                 max_iterations_per_prompt: int = 20,
+                 max_iterations_per_prompt: int = 60,
                  num_workers: int = 4):
         self.target_llm = target_llm
         self.attacker_llm = create_target_llm(attacker_llm_config)
@@ -86,46 +86,57 @@ class PAIRBaseline:
             'diversity': 0
         }
 
-        # Calculate how many evaluations per seed
-        evals_per_seed = max(1, budget // len(seed_prompts))
-
-        print(f"Running PAIR with {len(seed_prompts)} seeds, ~{evals_per_seed} evals each ({self.num_workers} workers)...")
-
         total_evaluations = 0
         pbar = tqdm(total=budget, desc="PAIR")
+        round_num = 0
 
-        # Process seeds in parallel
-        with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
-            futures = {
-                executor.submit(self._refine_single_seed, seed, evals_per_seed): seed
-                for seed in seed_prompts
-            }
+        # Keep running until budget exhausted, cycling through seeds
+        while total_evaluations < budget:
+            round_num += 1
+            remaining = budget - total_evaluations
+            evals_per_seed = max(1, min(self.max_iterations_per_prompt, remaining // max(1, len(seed_prompts))))
 
-            for future in as_completed(futures):
-                seed_results = future.result()
+            print(f"Running PAIR round {round_num} with {len(seed_prompts)} seeds, ~{evals_per_seed} evals each ({self.num_workers} workers)...")
 
-                for res in seed_results:
+            # Process seeds in parallel
+            with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
+                futures = {
+                    executor.submit(self._refine_single_seed, seed, evals_per_seed): seed
+                    for seed in seed_prompts
+                }
+
+                for future in as_completed(futures):
+                    seed_results = future.result()
+
+                    for res in seed_results:
+                        if total_evaluations >= budget:
+                            break
+
+                        total_evaluations += 1
+                        pbar.update(1)
+
+                        results['prompts'].append(res['prompt'])
+                        results['qualities'].append(res['quality'])
+                        results['behaviors'].append(res['behavior'])
+
+                        # Track coverage
+                        grid_x = int(res['behavior'][0] * 25)
+                        grid_y = int(res['behavior'][1] * 25)
+                        results['coverage'].add((grid_x, grid_y))
+
+                        # Update best
+                        if res['quality'] > results['best_quality']:
+                            results['best_quality'] = res['quality']
+                            results['best_prompt'] = res['prompt']
+
                     if total_evaluations >= budget:
                         break
 
-                    total_evaluations += 1
-                    pbar.update(1)
-
-                    results['prompts'].append(res['prompt'])
-                    results['qualities'].append(res['quality'])
-                    results['behaviors'].append(res['behavior'])
-
-                    # Track coverage
-                    grid_x = int(res['behavior'][0] * 25)
-                    grid_y = int(res['behavior'][1] * 25)
-                    results['coverage'].add((grid_x, grid_y))
-
-                    # Update best
-                    if res['quality'] > results['best_quality']:
-                        results['best_quality'] = res['quality']
-                        results['best_prompt'] = res['prompt']
-
-                if total_evaluations >= budget:
+            # If we barely made progress this round, break to avoid infinite loop
+            if evals_per_seed <= 1 and total_evaluations < budget:
+                # Do one more pass with single evals
+                remaining = budget - total_evaluations
+                if remaining <= 0:
                     break
 
         pbar.close()

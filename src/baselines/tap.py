@@ -43,8 +43,8 @@ class TAPBaseline:
                  quality_metric: AlignmentDeviation,
                  behavioral_descriptor,
                  branching_factor: int = 4,
-                 max_depth: int = 5,
-                 prune_threshold: float = 0.3,
+                 max_depth: int = 10,
+                 prune_threshold: float = 0.1,
                  num_workers: int = 8):
         self.target_llm = target_llm
         self.mutation_operators = mutation_operators
@@ -96,7 +96,8 @@ class TAPBaseline:
 
         # Initialize priority queue with seed prompts (evaluate in parallel)
         frontier = []
-        seeds_to_eval = seed_prompts[:min(10, len(seed_prompts))]
+        seeds_to_eval = seed_prompts[:min(50, len(seed_prompts))]
+        all_seeds = seed_prompts  # Keep all seeds for restarts
 
         print(f"Running TAP with {len(seeds_to_eval)} seeds ({self.num_workers} workers)...")
 
@@ -125,8 +126,46 @@ class TAPBaseline:
                         results['best_quality'] = result['quality']
                         results['best_prompt'] = result['prompt']
 
+        # Track which seeds have been used for restarts
+        seed_idx = len(seeds_to_eval)
+
         # Tree search with parallel evaluation
-        while evaluations < budget and frontier:
+        while evaluations < budget:
+            # If frontier is empty, restart with more seeds
+            if not frontier:
+                if seed_idx >= len(all_seeds):
+                    # All seeds exhausted, cycle back with depth reset
+                    seed_idx = 0
+
+                # Add more seeds to frontier
+                restart_seeds = all_seeds[seed_idx:seed_idx + 10]
+                seed_idx += 10
+
+                if restart_seeds:
+                    with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
+                        futures = {executor.submit(self._evaluate_single, seed, 0): seed for seed in restart_seeds}
+                        for future in as_completed(futures):
+                            if evaluations >= budget:
+                                break
+                            result = future.result()
+                            evaluations += 1
+                            pbar.update(1)
+                            if result['success']:
+                                results['prompts'].append(result['prompt'])
+                                results['qualities'].append(result['quality'])
+                                results['behaviors'].append(result['behavior'])
+                                grid_x = int(result['behavior'][0] * 25)
+                                grid_y = int(result['behavior'][1] * 25)
+                                results['coverage'].add((grid_x, grid_y))
+                                node = AttackNode(prompt=result['prompt'], quality=result['quality'], depth=0)
+                                heapq.heappush(frontier, node)
+                                if result['quality'] > results['best_quality']:
+                                    results['best_quality'] = result['quality']
+                                    results['best_prompt'] = result['prompt']
+                    continue
+                else:
+                    break
+
             # Get batch of promising nodes
             batch_size = min(self.num_workers, len(frontier), budget - evaluations)
             current_nodes = []
@@ -143,7 +182,8 @@ class TAPBaseline:
                 current_nodes.append(node)
 
             if not current_nodes:
-                break
+                # All popped nodes were pruned, continue to potentially restart
+                continue
 
             # Generate all mutations for batch
             mutations_to_eval = []

@@ -1,0 +1,10 @@
+{
+  "method": "genetic_attack",
+  "budget": 15000,
+  "coverage": 34.72,
+  "diversity": 0,
+  "peak_ad": 0.5,
+  "asr": 0.0,
+  "generations": 300,
+  "semantic_validity": 50.0
+}
