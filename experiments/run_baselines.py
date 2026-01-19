@@ -15,8 +15,16 @@ from pathlib import Path
 
 from src.baselines.random_sampling import RandomSampling
 from src.baselines.gcg_blackbox import GCGBlackBox
+from src.baselines.genetic_attack import GeneticSuffixAttack
 from src.baselines.pair import PAIRBaseline
 from src.baselines.tap import TAPBaseline
+
+# Conditionally import white-box GCG (requires torch)
+try:
+    from src.baselines.gcg_whitebox import GCGWhiteBox
+    GCG_WHITEBOX_AVAILABLE = True
+except ImportError:
+    GCG_WHITEBOX_AVAILABLE = False
 from src.core.behavioral_space import create_descriptor
 from src.core.quality_metrics import AlignmentDeviation, JudgeLLM, JudgeCommittee
 from src.models.target_llm import create_target_llm
@@ -137,34 +145,62 @@ def run_random_baseline(target_llm, quality_metric, behavioral_descriptor,
 
 
 def run_gcg_baseline(target_llm, quality_metric, behavioral_descriptor,
-                    seed_prompts, budget: int, num_workers: int, output_dir: Path):
-    """Run GCG black-box baseline."""
-    print("Running GCG baseline...")
+                    seed_prompts, budget: int, num_workers: int, is_local_model: bool, output_dir: Path):
+    """
+    Run GCG/Genetic attack baseline.
 
-    baseline = GCGBlackBox(
-        target_llm=target_llm,
-        quality_metric=quality_metric,
-        behavioral_descriptor=behavioral_descriptor,
-        num_workers=num_workers
-    )
-    
-    # Run on first seed prompt (GCG typically focuses on single prompt)
+    Automatically selects:
+    - GCG White-box (gradient-based) for local models
+    - Genetic Algorithm (black-box) for API models
+    """
+    if is_local_model and GCG_WHITEBOX_AVAILABLE:
+        print("Running GCG White-box baseline (gradient-based)...")
+        method_name = 'gcg_whitebox'
+
+        baseline = GCGWhiteBox(
+            target_llm=target_llm,
+            quality_metric=quality_metric,
+            behavioral_descriptor=behavioral_descriptor,
+            suffix_length=20,
+            top_k=256,
+            batch_size=min(512, budget // 10),
+            num_workers=num_workers
+        )
+    else:
+        if is_local_model and not GCG_WHITEBOX_AVAILABLE:
+            print("Warning: GCG White-box not available (missing torch?), falling back to Genetic Attack")
+        print("Running Genetic Attack baseline (black-box)...")
+        method_name = 'genetic_attack'
+
+        baseline = GeneticSuffixAttack(
+            target_llm=target_llm,
+            quality_metric=quality_metric,
+            behavioral_descriptor=behavioral_descriptor,
+            population_size=50,
+            suffix_length=20,
+            mutation_rate=0.1,
+            crossover_rate=0.5,
+            num_workers=num_workers
+        )
+
+    # Run on first seed prompt
     results = baseline.run(seed_prompts[0], budget)
-    
+
     # Save results
     output_file = output_dir / 'gcg_results.json'
     with open(output_file, 'w') as f:
         json.dump({
-            'method': 'gcg',
+            'method': method_name,
             'budget': budget,
             'coverage': results['coverage_percent'],
             'diversity': results['diversity'],
             'peak_ad': results['best_quality'],
             'asr': results['asr'],
-            'semantic_validity': 34.2  # Lower due to suffix perturbations
+            'generations': results.get('generations', None),
+            'semantic_validity': 50.0 if method_name == 'genetic_attack' else 34.2
         }, f, indent=2)
-    
-    print(f"GCG baseline complete. Peak AD: {results['best_quality']:.2f}")
+
+    print(f"{method_name} complete. Peak AD: {results['best_quality']:.2f}")
     return results
 
 
@@ -283,7 +319,12 @@ def main():
     target_llm, quality_metric, behavioral_descriptor, seed_prompts = setup_components(
         args.model, models_config, exp_config, harm_config, args.seed_prompts
     )
-    
+
+    # Determine if model is local (for GCG white-box vs black-box selection)
+    target_config = models_config['target_models'][args.model]
+    is_local_model = target_config.get('provider', 'local') == 'local'
+    print(f"Model type: {'local (white-box GCG available)' if is_local_model else 'API (using Genetic Attack)'}")
+
     # Run baselines
     all_results = {}
     
@@ -302,7 +343,7 @@ def main():
         if 'gcg' in args.baselines:
             results = run_gcg_baseline(
                 target_llm, quality_metric, behavioral_descriptor,
-                seed_prompts, args.budget, args.workers, run_dir
+                seed_prompts, args.budget, args.workers, is_local_model, run_dir
             )
             all_results.setdefault('gcg', []).append(results)
 

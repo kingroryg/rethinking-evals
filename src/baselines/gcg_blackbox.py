@@ -49,7 +49,7 @@ class GCGBlackBox:
         """Evaluate a single candidate (thread-safe)."""
         try:
             response = self.target_llm.generate(candidate_prompt)
-            behavior = self.behavioral_descriptor(candidate_prompt)
+            behavior = self.behavioral_descriptor.compute(candidate_prompt)
             quality = self.quality_metric.evaluate(candidate_prompt, response)
 
             return {

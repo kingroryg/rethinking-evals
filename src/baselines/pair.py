@@ -40,7 +40,7 @@ class PAIRBaseline:
             try:
                 # Get target response
                 target_response = self.target_llm.generate(current_prompt)
-                behavior = self.behavioral_descriptor(current_prompt)
+                behavior = self.behavioral_descriptor.compute(current_prompt)
                 quality = self.quality_metric.evaluate(current_prompt, target_response)
 
                 results.append({

@@ -60,7 +60,7 @@ class TAPBaseline:
         """Evaluate a single prompt (thread-safe)."""
         try:
             response = self.target_llm.generate(prompt)
-            behavior = self.behavioral_descriptor(prompt)
+            behavior = self.behavioral_descriptor.compute(prompt)
             quality = self.quality_metric.evaluate(prompt, response)
 
             return {
