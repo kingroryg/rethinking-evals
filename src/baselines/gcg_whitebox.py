@@ -155,6 +155,10 @@ class GCGWhiteBox:
             embeddings[:, suffix_start + self.suffix_length:, :]
         ], dim=1)
 
+        # Ensure target_ids matches batch size
+        if target_ids.dim() == 1:
+            target_ids = target_ids.unsqueeze(0)
+
         # Forward pass with embeddings
         outputs = self.model(inputs_embeds=full_embeddings, labels=target_ids)
         loss = outputs.loss
