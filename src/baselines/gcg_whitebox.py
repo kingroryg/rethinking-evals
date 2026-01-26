@@ -142,7 +142,7 @@ class GCGWhiteBox:
 
         # Create one-hot representation for suffix tokens
         suffix_slice = slice(suffix_start, suffix_start + self.suffix_length)
-        one_hot = F.one_hot(suffix_ids, num_classes=self.vocab_size).float()
+        one_hot = F.one_hot(suffix_ids, num_classes=self.vocab_size).to(dtype=self.embedding_layer.weight.dtype)
         one_hot.requires_grad_(True)
 
         # Replace suffix embeddings with one-hot @ embedding_weights
