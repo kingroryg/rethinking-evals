@@ -1,0 +1,8 @@
+{
+  "method": "random",
+  "budget": 15000,
+  "coverage": 5.28,
+  "diversity": 30,
+  "peak_ad": 1.0,
+  "semantic_validity": 99.8
+}
