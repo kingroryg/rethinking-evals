@@ -1,0 +1,9 @@
+{
+  "method": "tap",
+  "budget": 15000,
+  "coverage": 25.6,
+  "diversity": 1537,
+  "peak_ad": 1.0,
+  "asr": 10.246666666666666,
+  "semantic_validity": 91.2
+}
