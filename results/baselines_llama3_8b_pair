@@ -1,0 +1,9 @@
+{
+  "method": "pair",
+  "budget": 15000,
+  "coverage": 61.44,
+  "diversity": 545,
+  "peak_ad": 1.0,
+  "asr": 3.6333333333333337,
+  "semantic_validity": 87.4
+}
