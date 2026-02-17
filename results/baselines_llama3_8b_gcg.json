@@ -1,0 +1,10 @@
+{
+  "method": "gcg_whitebox",
+  "budget": 15000,
+  "coverage": 7.199999999999999,
+  "diversity": 173,
+  "peak_ad": 1.0,
+  "asr": 1.1533333333333333,
+  "generations": null,
+  "semantic_validity": 34.2
+}
