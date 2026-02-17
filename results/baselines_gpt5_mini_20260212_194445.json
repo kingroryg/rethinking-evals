@@ -1,0 +1,22 @@
+{
+  "pair": {
+    "coverage_mean": 58.56,
+    "coverage_std": 0.0,
+    "diversity_mean": 0.0,
+    "diversity_std": 0.0,
+    "peak_ad_mean": 0.5,
+    "peak_ad_std": 0.0,
+    "asr_mean": 0.0,
+    "asr_std": 0.0
+  },
+  "tap": {
+    "coverage_mean": 30.080000000000002,
+    "coverage_std": 0.0,
+    "diversity_mean": 0.0,
+    "diversity_std": 0.0,
+    "peak_ad_mean": 0.5,
+    "peak_ad_std": 0.0,
+    "asr_mean": 0.0,
+    "asr_std": 0.0
+  }
+}
