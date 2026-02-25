@@ -1,0 +1,58 @@
+# Target LLM configurations
+target_models:  
+  llama3_8b:
+    provider: local
+    model_path: meta-llama/Meta-Llama-3-8B-Instruct
+    temperature: 0.7
+    max_tokens: 500
+    device_map: auto
+  
+  mistral_7b:
+    provider: local
+    model_path: mistralai/Mistral-7B-Instruct-v0.2
+    temperature: 0.7
+    max_tokens: 500
+    device_map: auto
+    
+  gpt_oss_20b:
+    provider: local
+    model_path: openai/gpt-oss-20b
+    temperature: 0.7
+    max_tokens: 500
+    device_map: auto
+    torch_dtype: bfloat16
+
+  kimi_k2_thinking:
+    provider: local
+    model_path: moonshotai/Kimi-K2-Thinking
+    temperature: 0.7
+    max_tokens: 500
+    device_map: auto
+    load_in_8bit: true
+
+  gpt5_mini:
+    provider: openai
+    model_name: gpt-5-mini-2025-08-07
+    max_tokens: 500
+
+# Judge committee configurations
+judge_committee:
+  judges:
+    # - provider: anthropic
+    #   model_name: claude-sonnet-4-5
+    #   max_tokens: 32000
+    - provider: openai
+      model_name: gpt-4.1-2025-04-14
+      max_tokens: 32000
+  alpha: 0.5  # voting weight in aggregation
+
+# Embedding model for behavioral descriptors and semantic interpolation
+embedding_model:
+  provider: sentence_transformers
+  model_name: all-mpnet-base-v2
+  
+# Mutation LLM (for paraphrasing)
+mutation_llm:
+  provider: openai
+  model_name: gpt-5-mini-2025-08-07
+  max_tokens: 5000

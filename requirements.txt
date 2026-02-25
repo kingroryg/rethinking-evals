@@ -1,0 +1,5 @@
+# This project now uses pyproject.toml for dependency management
+# To install dependencies, use:
+#   uv sync
+# 
+# For the old requirements.txt, see requirements.txt.old

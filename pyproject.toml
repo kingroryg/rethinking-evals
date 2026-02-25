@@ -1,0 +1,158 @@
+[project]
+name = "rethinking-evals"
+version = "0.1.0"
+description = "Behavioral Attraction Basins in Language Models - MAP-Elites implementation for LLM safety evaluation"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+    { name = "Research Team", email = "contact@example.com" }
+]
+license = { text = "MIT" }
+keywords = ["llm", "safety", "evaluation", "map-elites", "quality-diversity"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    # Core dependencies
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "pandas>=2.0.0",
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",
+    "scikit-learn>=1.3.0",
+    
+    # LLM APIs
+    "openai>=1.0.0",
+    "anthropic>=0.18.0",
+    
+    # NLP and embeddings
+    "spacy>=3.5.0",
+    "sentence-transformers>=2.2.0",
+    "transformers>=4.30.0",
+    "torch>=2.0.0",
+    
+    # Utilities
+    "pyyaml>=6.0",
+    "tqdm>=4.65.0",
+    "python-dotenv>=1.0.0",
+    "joblib>=1.3.0",
+    
+    # Visualization
+    "plotly>=5.14.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.5.0",
+    "ipython>=8.0.0",
+    "jupyter>=1.0.0",
+]
+
+tracking = [
+    "wandb>=0.15.0",
+    "tensorboard>=2.13.0",
+]
+
+[project.scripts]
+rethinking-evals = "experiments.run_main_experiment:main"
+run-baselines = "experiments.run_baselines:main"
+run-ablation = "experiments.run_ablation:main"
+run-gp = "experiments.run_gp_prediction:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src", "experiments", "visualization", "config"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+addopts = [
+    "--verbose",
+    "--strict-markers",
+    "--tb=short",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["*/tests/*", "*/__init__.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+    "W191",  # indentation contains tabs
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.ruff.isort]
+known-third-party = ["torch", "transformers", "numpy", "pandas", "sklearn"]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
+[tool.uv]
+dev-dependencies = [
+    "ipykernel>=6.0.0",
+]
