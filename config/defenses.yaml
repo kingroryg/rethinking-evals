@@ -1,0 +1,37 @@
+# Continuous and discontinuous defenses for Section sec:reliability.
+# Each top-level key is the defense name passed to --defense on the runner.
+
+perplexity_filter:
+  kind: perplexity_filter
+  threshold: 100.0
+  ppl_model_name: gpt2
+  device: auto
+  rephraser:
+    provider: local
+    model_path: meta-llama/Meta-Llama-3-8B-Instruct
+    temperature: 0.0
+    max_tokens: 256
+    device_map: auto
+    torch_dtype: bfloat16
+
+paraphrase:
+  kind: paraphrase
+  model_name: Vamsi/T5_Paraphrase_Paws
+  max_length: 256
+  num_beams: 5
+  device: auto
+
+constitutional:
+  kind: constitutional
+  rewriter:
+    provider: local
+    model_path: meta-llama/Meta-Llama-3-8B-Instruct
+    temperature: 0.0
+    max_tokens: 256
+    device_map: auto
+    torch_dtype: bfloat16
+
+blocklist:
+  kind: blocklist
+  # Optional: override DEFAULT_NGRAMS by pointing at a file.
+  # ngrams_file: data/blocklist_ngrams.txt

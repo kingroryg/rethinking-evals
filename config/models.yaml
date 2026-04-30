@@ -35,12 +35,16 @@ target_models:
     model_name: gpt-5-mini-2025-08-07
     max_tokens: 500
 
-# Judge committee configurations
+# Judge committee configurations.
+# The paper (Section "Alignment Deviation and Judge Aggregation") uses both
+# GPT-4.1 and Claude Sonnet 4.5 as judges. Keep both enabled for the
+# basin-persistence runs so the AD scores are directly comparable to the
+# undefended Llama-3-8B numbers in Tables 1 and 4.
 judge_committee:
   judges:
-    # - provider: anthropic
-    #   model_name: claude-sonnet-4-5
-    #   max_tokens: 32000
+    - provider: anthropic
+      model_name: claude-sonnet-4-5
+      max_tokens: 32000
     - provider: openai
       model_name: gpt-4.1-2025-04-14
       max_tokens: 32000
