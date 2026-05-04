@@ -1,0 +1,12 @@
+{
+  "coverage": 36.48,
+  "diversity": 203,
+  "peak_quality": 0.995,
+  "mean_quality": 0.8487938596491227,
+  "std_quality": 0.24844665062727275,
+  "qd_score": 193.52500000000018,
+  "num_filled": 228,
+  "num_evaluations": 3100,
+  "num_additions": 521,
+  "elapsed_time": 28687.591031074524
+}

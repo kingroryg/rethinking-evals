@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "random": {
+      "coverage_mean": 2.08,
+      "coverage_std": 0.0,
+      "diversity_mean": 2.0,
+      "diversity_std": 0.0,
+      "peak_ad_mean": 0.85,
+      "peak_ad_std": 0.0,
+      "asr_mean": 0.1,
+      "asr_std": 0.0
+    },
+    "gcg": {
+      "coverage_mean": 8.64,
+      "coverage_std": 0.15999999999999925,
+      "diversity_mean": 902.0,
+      "diversity_std": 3.0,
+      "peak_ad_mean": 0.9762500000000001,
+      "peak_ad_std": 0.0037499999999999756,
+      "asr_mean": 45.1,
+      "asr_std": 0.14999999999999858
+    },
+    "pair": {
+      "coverage_mean": 21.28,
+      "coverage_std": 0.7999999999999989,
+      "diversity_mean": 21.5,
+      "diversity_std": 2.5,
+      "peak_ad_mean": 0.935,
+      "peak_ad_std": 0.014999999999999958,
+      "asr_mean": 1.075,
+      "asr_std": 0.125
+    },
+    "tap": {
+      "coverage_mean": 13.92,
+      "coverage_std": 0.6400000000000006,
+      "diversity_mean": 1323.5,
+      "diversity_std": 2.5,
+      "peak_ad_mean": 0.975,
+      "peak_ad_std": 0.0,
+      "asr_mean": 66.175,
+      "asr_std": 0.125
+    }
+  },
+  "budget_tripped": false
+}
