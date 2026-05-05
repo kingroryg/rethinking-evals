@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "error": null,
+  "run": 1,
+  "final_stats": {
+    "coverage_pct": 9.92,
+    "diversity": 37,
+    "peak_quality": 0.99,
+    "mean_quality": 0.5802419354838707,
+    "qd_score": 35.97499999999999,
+    "num_filled": 62
+  },
+  "judge_parse_stats": [
+    {
+      "total_calls": 137,
+      "upstream_errors": 0,
+      "parse_failures": 5,
+      "schema_mismatches": 0,
+      "fallback_fraction": 0.0364963503649635
+    },
+    {
+      "total_calls": 137,
+      "upstream_errors": 1,
+      "parse_failures": 0,
+      "schema_mismatches": 0,
+      "fallback_fraction": 0.0072992700729927005
+    }
+  ],
+  "elapsed_sec": 41764.8
+}

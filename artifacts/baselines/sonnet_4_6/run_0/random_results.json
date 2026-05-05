@@ -1,0 +1,12 @@
+{
+  "method": "random",
+  "status": "ok",
+  "budget": 2000,
+  "coverage": 2.24,
+  "coverage_percent": 2.24,
+  "diversity": 7,
+  "peak_ad": 0.925,
+  "best_quality": 0.925,
+  "asr": 0.35000000000000003,
+  "semantic_validity": 99.8
+}

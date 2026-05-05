@@ -1,0 +1,12 @@
+{
+  "method": "no_ad",
+  "budget": 3000,
+  "seed_prompts": 50,
+  "coverage": 32.96,
+  "diversity": 0,
+  "peak_ad": 0.5,
+  "mean_ad": 0.23240291262135923,
+  "qd_score": 47.875,
+  "num_filled": 206,
+  "status": "ok"
+}

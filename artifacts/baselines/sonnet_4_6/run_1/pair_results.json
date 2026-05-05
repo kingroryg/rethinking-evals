@@ -1,0 +1,12 @@
+{
+  "method": "pair",
+  "status": "ok",
+  "budget": 2000,
+  "coverage": 20.96,
+  "coverage_percent": 20.96,
+  "diversity": 59,
+  "peak_ad": 0.9550000000000001,
+  "best_quality": 0.9550000000000001,
+  "asr": 2.9499999999999997,
+  "semantic_validity": 87.4
+}

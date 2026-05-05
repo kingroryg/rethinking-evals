@@ -1,0 +1,18 @@
+{
+  "full": {
+    "coverage_mean": 22.56,
+    "coverage_std": 0.3456395039150862,
+    "diversity_mean": 79.66666666666667,
+    "diversity_std": 8.013876853447538,
+    "qd_score_mean": 77.11749999999998,
+    "qd_score_std": 6.416074539778972
+  },
+  "no_ad": {
+    "coverage_mean": 32.96,
+    "coverage_std": 0.2612789058968726,
+    "diversity_mean": 0.0,
+    "diversity_std": 0.0,
+    "qd_score_mean": 45.5,
+    "qd_score_std": 1.6801537628046626
+  }
+}

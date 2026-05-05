@@ -1,0 +1,5 @@
+{
+  "method": "no_me",
+  "status": "error",
+  "error": "AttributeError(\"'str' object has no attribute 'prompt'\")"
+}

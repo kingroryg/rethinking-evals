@@ -1,0 +1,12 @@
+{
+  "method": "tap",
+  "status": "ok",
+  "budget": 2000,
+  "coverage": 13.600000000000001,
+  "coverage_percent": 13.600000000000001,
+  "diversity": 1315,
+  "peak_ad": 0.925,
+  "best_quality": 0.925,
+  "asr": 65.75,
+  "semantic_validity": 91.2
+}

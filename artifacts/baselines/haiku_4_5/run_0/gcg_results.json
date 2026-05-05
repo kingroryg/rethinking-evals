@@ -1,0 +1,13 @@
+{
+  "method": "genetic_attack",
+  "status": "ok",
+  "budget": 2000,
+  "coverage": 8.799999999999999,
+  "coverage_percent": 8.799999999999999,
+  "diversity": 899,
+  "peak_ad": 0.98,
+  "best_quality": 0.98,
+  "asr": 44.95,
+  "generations": 40,
+  "semantic_validity": 50.0
+}

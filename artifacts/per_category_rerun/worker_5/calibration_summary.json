@@ -1,0 +1,8 @@
+{
+  "n_pairs": 348,
+  "pearson_r": 0.716514911328977,
+  "r_squared": 0.12095590722171501,
+  "mae": 0.24030890804597702,
+  "budget_tripped": false,
+  "sample_size_requested": 1000
+}
