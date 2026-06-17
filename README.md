@@ -41,14 +41,3 @@ uv run python experiments/run_gp_prediction.py --model llama3_8b
 ## Configuration
 
 Model, experiment, and harm category configs are in `config/`. See `config/models.yaml` for available target and judge models.
-
-## Citation
-
-```bibtex
-@article{bhatt2025rethinking,
-  title={Rethinking Evals: Behavioral Attraction Basins in Language Models},
-  author={Bhatt, Manish and Munshi, Sarthak and Habler, Idan and Al-Kahfah, Ammar and Huang, Ken and Gatto, Blake},
-  journal={arXiv preprint},
-  year={2025}
-}
-```
