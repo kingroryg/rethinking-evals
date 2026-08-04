@@ -159,8 +159,15 @@ class GCGWhiteBox:
         if target_ids.dim() == 1:
             target_ids = target_ids.unsqueeze(0)
 
+        # Pad labels to match input sequence length (use -100 to ignore non-target positions)
+        seq_len = full_embeddings.shape[1]
+        target_len = target_ids.shape[1]
+        padded_labels = torch.full((1, seq_len), -100, dtype=torch.long, device=self.device)
+        # Place target tokens at the end of the sequence
+        padded_labels[:, -target_len:] = target_ids
+
         # Forward pass with embeddings
-        outputs = self.model(inputs_embeds=full_embeddings, labels=target_ids)
+        outputs = self.model(inputs_embeds=full_embeddings, labels=padded_labels)
         loss = outputs.loss
 
         # Backward pass
@@ -213,30 +220,24 @@ class GCGWhiteBox:
 
         return candidates
 
+    def _evaluate_single_candidate(self, suffix_ids: torch.Tensor, base_prompt: str) -> Tuple[torch.Tensor, float, str]:
+        """Evaluate a single candidate."""
+        try:
+            suffix_text = self.tokenizer.decode(suffix_ids, skip_special_tokens=True)
+            full_prompt = base_prompt + " " + suffix_text
+            response = self.target_llm.generate(full_prompt)
+            quality = self.quality_metric.evaluate(full_prompt, response)
+            return (suffix_ids, quality, full_prompt)
+        except Exception:
+            return (suffix_ids, 0.0, "")
+
     def _evaluate_candidates_batch(self,
                                    candidates: List[torch.Tensor],
                                    base_prompt: str) -> List[Tuple[torch.Tensor, float, str]]:
-        """Evaluate a batch of candidates."""
-        results = []
-
-        for suffix_ids in candidates:
-            try:
-                # Decode suffix
-                suffix_text = self.tokenizer.decode(suffix_ids, skip_special_tokens=True)
-                full_prompt = base_prompt + " " + suffix_text
-
-                # Generate response
-                response = self.target_llm.generate(full_prompt)
-
-                # Evaluate quality
-                quality = self.quality_metric.evaluate(full_prompt, response)
-
-                results.append((suffix_ids, quality, full_prompt))
-
-            except Exception as e:
-                results.append((suffix_ids, 0.0, ""))
-
-        return results
+        """Evaluate a batch of candidates in parallel."""
+        with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
+            futures = [executor.submit(self._evaluate_single_candidate, c, base_prompt) for c in candidates]
+            return [f.result() for f in futures]
 
     def run(self, initial_prompt: str, budget: int) -> Dict:
         """
@@ -289,12 +290,14 @@ class GCGWhiteBox:
         while evaluations < budget:
             # Step 1: Compute gradients
             try:
+                print("Computing gradients...", flush=True)
                 gradients = self._compute_token_gradients(
                     base_tokens,
                     suffix_ids,
                     suffix_start,
                     target_tokens
                 )
+                print("Gradients computed.", flush=True)
             except Exception as e:
                 print(f"Gradient computation failed: {e}")
                 # Fall back to random selection
@@ -306,6 +309,7 @@ class GCGWhiteBox:
             # Step 3: Generate candidates
             num_candidates = min(self.batch_size, budget - evaluations)
             candidates = self._generate_candidates(suffix_ids, top_k_tokens, num_candidates)
+            print(f"Evaluating {num_candidates} candidates with {self.num_workers} workers...", flush=True)
 
             # Step 4: Evaluate candidates
             evaluated = self._evaluate_candidates_batch(candidates, initial_prompt)

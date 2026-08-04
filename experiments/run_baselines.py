@@ -163,8 +163,8 @@ def run_gcg_baseline(target_llm, quality_metric, behavioral_descriptor,
             behavioral_descriptor=behavioral_descriptor,
             suffix_length=20,
             top_k=256,
-            batch_size=min(512, budget // 10),
-            num_workers=num_workers
+            batch_size=min(64, budget // 10),
+            num_workers=max(num_workers, 32)
         )
     else:
         if is_local_model and not GCG_WHITEBOX_AVAILABLE:
