@@ -62,6 +62,11 @@ def main():
                         help="Run elite re-evaluation (needs model access)")
     parser.add_argument("--reeval-samples", type=int, default=5)
     parser.add_argument("--reeval-max-cells", type=int, default=None)
+    parser.add_argument("--reeval-selection", default="stratified",
+                        choices=["stratified", "random", "scan"],
+                        help="How to pick the max-cells subset (default: stratified)")
+    parser.add_argument("--reeval-seed", type=int, default=0,
+                        help="RNG seed for reeval cell sampling")
     parser.add_argument("--model-config", default=None,
                         help="Path to models.yaml (only needed with --reeval)")
     args = parser.parse_args()
@@ -139,6 +144,8 @@ def _run_reeval(archives, args):
             threshold=args.threshold,
             only_vulnerable=True,
             max_cells=args.reeval_max_cells,
+            selection=args.reeval_selection,
+            seed=args.reeval_seed,
         )
         reeval_report[name] = result
         print(f"[reeval:{name}] {result['summary']}")

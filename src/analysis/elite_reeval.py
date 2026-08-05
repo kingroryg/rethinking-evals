@@ -64,6 +64,75 @@ def reevaluate_elite(
     }
 
 
+def _collect_eligible(archive: Archive, threshold: float, only_vulnerable: bool):
+    """Return (i, j, cell) for every eligible elite in the archive."""
+    eligible = []
+    for i in range(archive.grid_size):
+        for j in range(archive.grid_size):
+            cell = archive.cells[i, j]
+            if cell is None:
+                continue
+            if only_vulnerable and cell.quality <= threshold:
+                continue
+            eligible.append((i, j, cell))
+    return eligible
+
+
+def _select_cells(
+    eligible,
+    grid_size: int,
+    max_cells: Optional[int],
+    selection: str,
+    seed: int,
+):
+    """
+    Choose which eligible elites to re-evaluate.
+
+    selection:
+      - "scan": first max_cells in grid-scan order (biased; legacy behavior).
+      - "random": uniform random sample of size max_cells.
+      - "stratified": spread the sample across the behavioral grid by
+        splitting it into a 2x2 (or finer) set of quadrants and drawing
+        proportionally from each, so the sample is not concentrated in one
+        corner of (a1, a2) space.
+    """
+    if max_cells is None or max_cells >= len(eligible):
+        return eligible
+    if selection == "scan":
+        return eligible[:max_cells]
+
+    rng = np.random.default_rng(seed)
+    if selection == "random":
+        idx = rng.choice(len(eligible), size=max_cells, replace=False)
+        return [eligible[k] for k in idx]
+
+    if selection == "stratified":
+        # Partition the grid into quadrants along both axes and allocate the
+        # budget across non-empty quadrants as evenly as possible.
+        half = grid_size / 2.0
+        buckets: Dict[tuple, list] = {}
+        for item in eligible:
+            i, j, _ = item
+            key = (0 if i < half else 1, 0 if j < half else 1)
+            buckets.setdefault(key, []).append(item)
+
+        keys = [k for k in buckets if buckets[k]]
+        chosen = []
+        # Round-robin one draw per non-empty quadrant until the budget is met.
+        pools = {k: list(rng.permutation(len(buckets[k]))) for k in keys}
+        while len(chosen) < max_cells and any(pools[k] for k in keys):
+            for k in keys:
+                if not pools[k]:
+                    continue
+                pick = pools[k].pop()
+                chosen.append(buckets[k][pick])
+                if len(chosen) >= max_cells:
+                    break
+        return chosen
+
+    raise ValueError(f"unknown selection mode: {selection}")
+
+
 def reevaluate_archive_elites(
     archive: Archive,
     ad_metric: AlignmentDeviation,
@@ -71,6 +140,8 @@ def reevaluate_archive_elites(
     threshold: float = 0.5,
     only_vulnerable: bool = True,
     max_cells: Optional[int] = None,
+    selection: str = "stratified",
+    seed: int = 0,
 ) -> Dict:
     """
     Re-evaluate elites across an archive and summarize basin persistence.
@@ -83,26 +154,23 @@ def reevaluate_archive_elites(
         only_vulnerable: restrict to elites already above threshold (the
             cells that define the basins).
         max_cells: optional cap for a quick/cheap run.
+        selection: "stratified" (default), "random", or "scan". Controls how
+            the max_cells subset is chosen so a cheap run is not biased to one
+            corner of the behavioral grid.
+        seed: RNG seed for reproducible sampling.
 
     Returns:
         Dict with per-cell records and aggregate persistence statistics.
     """
+    eligible = _collect_eligible(archive, threshold, only_vulnerable)
+    selected = _select_cells(eligible, archive.grid_size, max_cells, selection, seed)
+
     records: List[Dict] = []
-    cells_processed = 0
-    for i in range(archive.grid_size):
-        for j in range(archive.grid_size):
-            cell = archive.cells[i, j]
-            if cell is None:
-                continue
-            if only_vulnerable and cell.quality <= threshold:
-                continue
-            if max_cells is not None and cells_processed >= max_cells:
-                break
-            stats = reevaluate_elite(cell.prompt, ad_metric, n_samples, threshold)
-            stats["grid_position"] = [i, j]
-            stats["original_ad"] = float(cell.quality)
-            records.append(stats)
-            cells_processed += 1
+    for i, j, cell in selected:
+        stats = reevaluate_elite(cell.prompt, ad_metric, n_samples, threshold)
+        stats["grid_position"] = [i, j]
+        stats["original_ad"] = float(cell.quality)
+        records.append(stats)
 
     if records:
         persistences = np.array([r["persistence"] for r in records])
